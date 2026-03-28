@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How We Communicate — Functional Language Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --purple-dark: #2d1b5e;
+    --purple-mid: #4e2fa0;
+    --purple-light: #7b5fc4;
+    --purple-pale: #f0ecff;
+    --cream: #faf9ff;
+    --gold: #e0a84b;
+    --gold-light: #faf0d0;
+    --text-dark: #1a1a1a;
+    --text-mid: #3d3d3d;
+    --text-light: #6b6b6b;
+    --correct: #2d7a4f;
+    --correct-bg: #e6f4ed;
+    --wrong: #8b2c2c;
+    --wrong-bg: #faeaea;
+    --red-soft: #c0392b;
+    /* per-function accent colours */
+    --c-opinion:   #2d5e8a; --c-opinion-bg:   #e8f2fb;
+    --c-agree:     #2d7a4f; --c-agree-bg:     #e6f4ed;
+    --c-disagree:  #7a2d2d; --c-disagree-bg:  #faeaea;
+    --c-partial:   #7a5a2d; --c-partial-bg:   #fdf4e4;
+    --c-ask:       #4e2fa0; --c-ask-bg:       #f0ecff;
+    --c-clarify:   #2d6b6b; --c-clarify-bg:   #e6f5f5;
+    --c-add:       #4a7a2d; --c-add-bg:       #edf5e6;
+    --c-change:    #6b3a7a; --c-change-bg:    #f5ecfa;
+    --radius: 10px;
+    --shadow: 0 4px 20px rgba(45,27,94,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-dark); min-height: 100vh; }
+
+  header {
+    background: var(--purple-dark); color: white;
+    padding: 28px 40px 20px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  header h1 { font-family: 'Playfair Display', serif; font-size: 1.6rem; letter-spacing: 0.02em; color: var(--gold); }
+  header p { font-size: 0.82rem; color: #b8a8e4; margin-top: 3px; }
+
+  nav { background: var(--purple-mid); display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    background: none; border: none; color: #c8b8f0;
+    padding: 11px 18px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem; font-weight: 500; cursor: pointer;
+    white-space: nowrap; border-bottom: 3px solid transparent; transition: all 0.2s;
+  }
+  nav button:hover { color: white; background: rgba(255,255,255,0.08); }
+  nav button.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(255,255,255,0.06); }
+
+  main { max-width: 840px; margin: 0 auto; padding: 36px 24px 80px; }
+
+  .section { display: none; animation: fadeIn 0.3s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  .section-header { margin-bottom: 6px; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 1.55rem; color: var(--purple-dark); display: inline; }
+  .section-subtitle { font-family: 'Lora', serif; font-size: 0.92rem; color: var(--text-light); font-style: italic; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid #d8d0f0; margin-top: 8px; }
+
+  .tip-box { background: var(--gold-light); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 24px; border-left: 4px solid var(--gold); font-size: 0.87rem; line-height: 1.6; color: var(--text-mid); }
+  .tip-box strong { color: var(--purple-dark); display: block; margin-bottom: 4px; }
+
+  /* ── Phrase reference grid ── */
+  .phrase-section { margin-bottom: 28px; }
+  .phrase-section-label {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-light); margin-bottom: 10px;
+  }
+  .phrase-grid { display: flex; flex-direction: column; gap: 8px; }
+  .phrase-card {
+    background: white; border-radius: var(--radius);
+    padding: 14px 18px; box-shadow: var(--shadow);
+    border: 1px solid #e0d8f8; display: flex; flex-direction: column; gap: 6px;
+  }
+  .phrase-main { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--purple-dark); }
+  .phrase-main .blank { color: var(--purple-light); font-style: italic; }
+  .phrase-example { font-family: 'Lora', serif; font-style: italic; font-size: 0.88rem; color: var(--text-mid); padding: 6px 12px; border-radius: 6px; border-left: 3px solid; }
+  .phrase-note { font-size: 0.78rem; color: var(--text-light); }
+  .phrase-level { display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; padding: 2px 8px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
+  .level-a2 { background: #d4fde8; color: #1a5a3a; }
+  .level-b1 { background: #d4e8ff; color: #1a3a7a; }
+  .level-b2 { background: #e8d4fd; color: #4a1a7a; }
+
+  /* accent per function */
+  .fn-opinion .phrase-card  { border-color: #c0d8f0; }
+  .fn-opinion .phrase-example { border-color: var(--c-opinion); background: var(--c-opinion-bg); }
+  .fn-agree   .phrase-card  { border-color: #b8dcc8; }
+  .fn-agree   .phrase-example { border-color: var(--c-agree); background: var(--c-agree-bg); }
+  .fn-disagree .phrase-card { border-color: #e8c0c0; }
+  .fn-disagree .phrase-example { border-color: var(--c-disagree); background: var(--c-disagree-bg); }
+  .fn-partial  .phrase-card { border-color: #e0d0b0; }
+  .fn-partial  .phrase-example { border-color: var(--c-partial); background: var(--c-partial-bg); }
+  .fn-ask      .phrase-card { border-color: #d0c8f0; }
+  .fn-ask      .phrase-example { border-color: var(--c-ask); background: var(--c-ask-bg); }
+  .fn-clarify  .phrase-card { border-color: #b8d8d8; }
+  .fn-clarify  .phrase-example { border-color: var(--c-clarify); background: var(--c-clarify-bg); }
+  .fn-add      .phrase-card { border-color: #c8e0b8; }
+  .fn-add      .phrase-example { border-color: var(--c-add); background: var(--c-add-bg); }
+  .fn-change   .phrase-card { border-color: #d8c0e8; }
+  .fn-change   .phrase-example { border-color: var(--c-change); background: var(--c-change-bg); }
+
+  /* ── Quick reference table (overview) ── */
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 28px; }
+  .ov-card {
+    border-radius: var(--radius); padding: 14px 16px;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    border: 1.5px solid transparent;
+  }
+  .ov-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(45,27,94,0.15); }
+  .ov-card .ov-icon { font-size: 1.4rem; margin-bottom: 6px; }
+  .ov-card .ov-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+  .ov-card .ov-example { font-size: 0.78rem; font-style: italic; opacity: 0.85; }
+
+  /* ── Q cards ── */
+  .q-card { background: white; border-radius: var(--radius); padding: 22px 24px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid #e0d8f8; }
+  .q-number { display: inline-block; background: var(--purple-dark); color: var(--gold); font-family: 'Playfair Display', serif; font-size: 0.85rem; font-weight: 700; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; margin-right: 10px; float: left; }
+  .q-text { font-family: 'Lora', serif; font-size: 0.97rem; line-height: 1.6; margin-bottom: 14px; overflow: hidden; }
+  .options { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .option {
+    padding: 6px 14px; border-radius: 20px; border: 1.5px solid #c8b8f0;
+    background: var(--purple-pale); font-size: 0.85rem; color: var(--text-mid);
+    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    text-align: left;
+  }
+  .option:hover:not(:disabled) { border-color: var(--purple-mid); background: #e4dcff; }
+  .option:disabled { cursor: default; }
+  .option.correct { background: var(--correct-bg); border-color: var(--correct); color: var(--correct); font-weight: 600; }
+  .option.wrong { background: var(--wrong-bg); border-color: var(--wrong); color: var(--wrong); text-decoration: line-through; }
+  .option strong { color: var(--purple-dark); margin-right: 4px; }
+  .option.correct strong, .option.wrong strong { color: inherit; }
+
+  .score-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--purple-pale); border-radius: var(--radius);
+    padding: 10px 18px; margin-bottom: 24px; border: 1px solid #d0c8f0;
+  }
+  .score-label { font-size: 0.78rem; color: var(--text-light); font-weight: 500; }
+  .score-display { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--purple-dark); font-weight: 700; }
+  .score-summary { display: none; background: white; border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); border: 2px solid var(--purple-mid); margin-top: 8px; text-align: center; }
+  .score-big { font-family: 'Playfair Display', serif; font-size: 2.5rem; color: var(--purple-dark); font-weight: 700; }
+  .score-pct { font-size: 1.1rem; color: var(--text-light); margin: 4px 0 12px; }
+  .score-msg { font-family: 'Lora', serif; font-style: italic; font-size: 0.95rem; color: var(--text-mid); }
+
+  /* Reveal */
+  .reveal-btn { display: inline-flex; align-items: center; gap: 7px; background: none; border: 1.5px solid var(--purple-mid); color: var(--purple-mid); padding: 7px 16px; border-radius: 20px; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .reveal-btn:hover { background: var(--purple-mid); color: white; }
+  .reveal-btn .icon { font-size: 0.9rem; transition: transform 0.3s; }
+  .reveal-btn.open .icon { transform: rotate(180deg); }
+  .answer-panel { overflow: hidden; max-height: 0; transition: max-height 0.45s ease, opacity 0.3s ease; opacity: 0; }
+  .answer-panel.open { max-height: 2000px; opacity: 1; }
+  .answer-inner { margin-top: 14px; padding: 14px 16px; border-radius: 8px; border-left: 4px solid var(--correct); background: var(--correct-bg); }
+  .answer-label { font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--correct); margin-bottom: 4px; }
+  .answer-main { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--purple-dark); margin-bottom: 6px; }
+  .answer-why { font-size: 0.85rem; line-height: 1.6; color: var(--text-mid); }
+  .answer-why strong { color: var(--purple-dark); }
+
+  /* Dialogue */
+  .dialogue-card { background: white; border-radius: var(--radius); padding: 22px 26px; box-shadow: var(--shadow); border: 1px solid #e0d8f8; margin-bottom: 16px; }
+  .dialogue-line { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid #f0ecff; align-items: flex-start; }
+  .dialogue-line:last-child { border-bottom: none; }
+  .d-speaker { font-weight: 600; font-size: 0.82rem; color: var(--purple-mid); min-width: 50px; padding-top: 2px; }
+  .d-text { font-family: 'Lora', serif; font-size: 0.92rem; line-height: 1.6; color: var(--text-dark); flex: 1; }
+  .fn-tag {
+    display: inline-block; font-size: 0.65rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    padding: 1px 7px; border-radius: 10px; margin-left: 6px; vertical-align: middle;
+  }
+
+  /* Role-play cards */
+  .roleplay-card { background: white; border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); border: 1px solid #e0d8f8; margin-bottom: 14px; }
+  .rp-topic { font-family: 'Playfair Display', serif; font-size: 1rem; color: var(--purple-dark); margin-bottom: 10px; }
+  .rp-targets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .rp-target { font-size: 0.75rem; padding: 3px 10px; border-radius: 12px; border: 1px solid; font-weight: 500; }
+
+  /* Next btn */
+  .next-btn-wrap { margin-top: 32px; padding-top: 24px; border-top: 1px solid #d8d0f0; display: flex; justify-content: flex-end; }
+  .next-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--purple-dark); color: var(--gold); border: none; padding: 10px 22px; border-radius: 24px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 10px rgba(45,27,94,0.2); }
+  .next-btn:hover { background: var(--purple-mid); transform: translateX(3px); }
+  .next-btn .arrow { font-size: 1rem; }
+
+  /* Tone scale */
+  .tone-scale { display: flex; align-items: center; gap: 0; margin: 14px 0 6px; border-radius: 8px; overflow: hidden; }
+  .tone-step { flex: 1; text-align: center; font-size: 0.72rem; font-weight: 600; padding: 6px 4px; }
+
+  @media (max-width: 600px) {
+    header { padding: 20px 20px 14px; }
+    header h1 { font-size: 1.3rem; }
+    main { padding: 24px 16px 60px; }
+    nav button { padding: 10px 13px; font-size: 0.74rem; }
+    .overview-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>How We Communicate 🗣️</h1>
+  <p>Functional Language Reference &amp; Practice · A2–B2</p>
+</header>
+
+<nav id="tabs">
+  <button class="active" onclick="showSection('overview')">🗺️ Overview</button>
+  <button onclick="showSection('opinion')">💭 Opinions</button>
+  <button onclick="showSection('agree')">✅ Agreeing</button>
+  <button onclick="showSection('disagree')">❌ Disagreeing</button>
+  <button onclick="showSection('partial')">🤝 Partial</button>
+  <button onclick="showSection('ask')">❓ Asking</button>
+  <button onclick="showSection('clarify')">🔄 Clarifying</button>
+  <button onclick="showSection('add')">➕ Adding</button>
+  <button onclick="showSection('change')">🔀 Topic Change</button>
+  <button onclick="showSection('practice')">✏️ Practice</button>
+  <button onclick="showSection('dialogue')">💬 Dialogue</button>
+  <button onclick="showSection('roleplay')">🎭 Role Play</button>
+</nav>
+
+<main>
+
+<!-- ══════════ OVERVIEW ══════════ -->
+<div id="overview" class="section active">
+  <div class="section-header">
+    <h2 class="section-title">Overview 🗺️</h2>
+  </div>
+  <p class="section-subtitle">There are 8 communication functions in this lesson. Each one has its own set of phrases. Click a card to jump to that section.</p>
+
+  <div class="tip-box">
+    <strong>💡 What is functional language?</strong>
+    Functional language = phrases we use to DO things with words. Not grammar rules — <em>tools.</em> When you say "I see your point, but..." you're not just speaking — you're managing a conversation. These phrases are what fluent speakers use every day.
+  </div>
+
+  <div class="overview-grid">
+    <div class="ov-card" style="background:var(--c-opinion-bg); border-color:#c0d8f0;" onclick="showSection('opinion')">
+      <div class="ov-icon">💭</div>
+      <div class="ov-title" style="color:var(--c-opinion)">Giving Opinions</div>
+      <div class="ov-example" style="color:var(--c-opinion)">"I think... / In my view..."</div>
+    </div>
+    <div class="ov-card" style="background:var(--c-agree-bg); border-color:#b8dcc8;" onclick="showSection('agree')">
+      <div class="ov-icon">✅</div>
+      <div class="ov-title" style="color:var(--c-agree)">Agreeing</div>
+      <div class="ov-example" style="color:var(--c-agree)">"Exactly! / I couldn't agree more."</div>
+    </div>
+    <div class="ov-card" style="background:var(--c-disagree-bg); border-color:#e8c0c0;" onclick="showSection('disagree')">
+      <div class="ov-icon">❌</div>
+      <div class="ov-title" style="color:var(--c-disagree)">Disagreeing Politely</div>
+      <div class="ov-example" style="color:var(--c-disagree)">"I see your point, but..."</div>
+    </div>
+    <div class="ov-card" style="background:var(--c-partial-bg); border-color:#e0d0b0;" onclick="showSection('partial')">
+      <div class="ov-icon">🤝</div>
+      <div class="ov-title" style="color:var(--c-partial)">Partial Agreement</div>
+      <div class="ov-example" style="color:var(--c-partial)">"That's true to some extent..."</div>
+    </div>
+    <div class="ov-card" style="background:var(--c-ask-bg); border-color:#d0c8f0;" onclick="showSection('ask')">
+      <div class="ov-icon">❓</div>
+      <div class="ov-title" style="color:var(--c-ask)">Asking for Opinions</div>
+      <div class="ov-example" style="color:var(--c-ask)">"What do you think?"</div>
+    </div>
+    <div class="ov-card" style="background:var(--c-clarify-bg); border-color:#b8d8d8;" onclick="showSection('clarify')">
+      <div class="ov-icon">🔄</div>
+      <div class="ov-title" style="color:var(--c-clarify)">Clarifying</div>
+      <div class="ov-example" style="color:var(--c-clarify)">"What I mean is... / Let me rephrase..."</div>
+    </div>
+    <div class="ov-card" style="background:var(--c-add-bg); border-color:#c8e0b8;" onclick="showSection('add')">
+      <div class="ov-icon">➕</div>
+      <div class="ov-title" style="color:var(--c-add)">Adding Information</div>
+      <div class="ov-example" style="color:var(--c-add)">"What's more... / Not only that..."</div>
+    </div>
+    <div class="ov-card" style="background:var(--c-change-bg); border-color:#d8c0e8;" onclick="showSection('change')">
+      <div class="ov-icon">🔀</div>
+      <div class="ov-title" style="color:var(--c-change)">Changing Topic</div>
+      <div class="ov-example" style="color:var(--c-change)">"Anyway... / That reminds me..."</div>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    <strong>📌 How to use this lesson</strong>
+    Go through each section tab by tab. Each one has a phrase reference + a short practice. Then use the Practice, Dialogue, and Role Play tabs to put it all together.
+  </div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('opinion')">Start: Giving Opinions <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ══════════ GIVING OPINIONS ══════════ -->
+<div id="opinion" class="section">
+  <div class="section-header"><h2 class="section-title">Giving Opinions 💭</h2></div>
+  <p class="section-subtitle">Use these phrases to introduce your opinion clearly. The strength varies — from gentle to very direct.</p>
+
+  <div class="tone-scale">
+    <div class="tone-step" style="background:#e8f5ff; color:#1a3a7a;">← softer</div>
+    <div class="tone-step" style="background:#d0e8ff; color:#1a3a7a;">neutral</div>
+    <div class="tone-step" style="background:#1a3a7a; color:white;">stronger →</div>
+  </div>
+
+  <div class="phrase-grid fn-opinion" style="margin-top:14px; margin-bottom:28px;">
+
+    <div class="phrase-card">
+      <div class="phrase-main">I think <span class="blank">+ clause</span> <span class="phrase-level level-a2">A2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-opinion); background:var(--c-opinion-bg)">"I think closing the lid is still a good habit."</div>
+      <div class="phrase-note">The most common and neutral way to give an opinion. Safe in any situation.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I believe <span class="blank">+ clause</span> <span class="phrase-level level-a2">A2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-opinion); background:var(--c-opinion-bg)">"I believe public hygiene standards need to improve."</div>
+      <div class="phrase-note">Slightly more formal than "I think." Suggests more personal conviction.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I feel <span class="blank">+ clause</span> <span class="phrase-level level-a2">A2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-opinion); background:var(--c-opinion-bg)">"I feel that the study results are quite surprising."</div>
+      <div class="phrase-note">More emotional than "think" or "believe." Used when the opinion is personal or value-based.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">In my opinion, <span class="blank">+ clause</span> <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-opinion); background:var(--c-opinion-bg)">"In my opinion, the government should invest more in public health."</div>
+      <div class="phrase-note">More formal. Often used to introduce a strong or controversial opinion. ⚠️ Don't say "In my opinion, I think..." — it's redundant.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">In my view, <span class="blank">+ clause</span> <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-opinion); background:var(--c-opinion-bg)">"In my view, this research is very important for public health."</div>
+      <div class="phrase-note">Interchangeable with "In my opinion." Slightly more academic-sounding.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">From my perspective, <span class="blank">+ clause</span> <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-opinion); background:var(--c-opinion-bg)">"From my perspective, hygiene at home is more important than in public."</div>
+      <div class="phrase-note">Implies your opinion comes from your specific experience or background.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">As far as I'm concerned, <span class="blank">+ clause</span> <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-opinion); background:var(--c-opinion-bg)">"As far as I'm concerned, this changes nothing about my bathroom routine."</div>
+      <div class="phrase-note">Strong and direct. Can sound dismissive if overused. Use when you want to be firm.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">Personally, <span class="blank">+ clause</span> <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-opinion); background:var(--c-opinion-bg)">"Personally, I'm more worried about my toothbrush than the toilet lid."</div>
+      <div class="phrase-note">Makes clear this is your own view — not a general fact. Great for discussion questions.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">It seems to me that <span class="blank">+ clause</span> <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-opinion); background:var(--c-opinion-bg)">"It seems to me that the real issue is how often people disinfect their bathrooms."</div>
+      <div class="phrase-note">Softer and more analytical. Suggests you've thought about it carefully but are open to other views.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">If you ask me, <span class="blank">+ clause</span> <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-opinion); background:var(--c-opinion-bg)">"If you ask me, the whole study is just common sense dressed up in science."</div>
+      <div class="phrase-note">Conversational and slightly informal. Often used when giving a bold or direct opinion.</div>
+    </div>
+
+  </div>
+
+  <div class="tip-box">
+    <strong>⚡ Quick Practice</strong>
+    Try answering these out loud using a different phrase each time:<br>
+    "What do you think about social media?" &nbsp;·&nbsp; "Is English important?" &nbsp;·&nbsp; "Should people work from home?"
+  </div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('agree')">Agreeing <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ══════════ AGREEING ══════════ -->
+<div id="agree" class="section">
+  <div class="section-header"><h2 class="section-title">Agreeing ✅</h2></div>
+  <p class="section-subtitle">Saying "yes" is easy. Saying it fluently, with the right strength, is the goal.</p>
+
+  <div class="phrase-grid fn-agree" style="margin-bottom:28px;">
+
+    <div class="phrase-card">
+      <div class="phrase-main">Exactly! / Absolutely! / Definitely! <span class="phrase-level level-a2">A2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-agree); background:var(--c-agree-bg)">"This study is really surprising." — "Exactly! I never expected that."</div>
+      <div class="phrase-note">One-word strong agreements. Use these to show you're listening and engaged.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">You're right. / That's right. <span class="phrase-level level-a2">A2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-agree); background:var(--c-agree-bg)">"We should wash our hands more." — "You're right. Most people don't do it enough."</div>
+      <div class="phrase-note">Simple and clear. "You're right" agrees with the person; "That's right" agrees with the fact.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">That's a good point. <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-agree); background:var(--c-agree-bg)">"The study only tested one type of virus." — "That's a good point. It might not apply to all germs."</div>
+      <div class="phrase-note">Acknowledges the other person's argument. More specific than "You're right." Good for debates.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I agree (with you) on that. <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-agree); background:var(--c-agree-bg)">"I think hygiene at home matters more than people realise." — "I agree with you on that completely."</div>
+      <div class="phrase-note">A direct and clear agreement. Adding "completely" or "entirely" makes it stronger.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I couldn't agree more. <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-agree); background:var(--c-agree-bg)">"Public bathrooms need more funding." — "I couldn't agree more — it's a real problem."</div>
+      <div class="phrase-note">Emphatic strong agreement. A very natural, fluent expression. Don't overuse it.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">That's exactly what I think. / My thoughts exactly. <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-agree); background:var(--c-agree-bg)">"The study needs more testing before we change our habits." — "My thoughts exactly."</div>
+      <div class="phrase-note">Shows you had the same idea. "My thoughts exactly" is slightly more conversational.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I think you're absolutely right about that. <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-agree); background:var(--c-agree-bg)">"The media often exaggerates health studies." — "I think you're absolutely right about that."</div>
+      <div class="phrase-note">Fuller and warmer. Used in more formal conversations or when you want to show real engagement.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">That's a fair point. I'd have to agree. <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-agree); background:var(--c-agree-bg)">"Scientists sometimes oversimplify results." — "That's a fair point. I'd have to agree."</div>
+      <div class="phrase-note">Sounds thoughtful — like you considered it before agreeing. Great for academic discussions.</div>
+    </div>
+
+  </div>
+
+  <div class="tip-box">
+    <strong>⚡ Quick Practice</strong>
+    Your partner says these. Agree using a <em>different phrase each time</em>:<br>
+    "English is the most useful language." &nbsp;·&nbsp; "Social media has changed friendships." &nbsp;·&nbsp; "People spend too much time on their phones."
+  </div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('disagree')">Disagreeing <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ══════════ DISAGREEING ══════════ -->
+<div id="disagree" class="section">
+  <div class="section-header"><h2 class="section-title">Disagreeing Politely ❌</h2></div>
+  <p class="section-subtitle">Disagreeing without being rude is one of the most important conversation skills. Always acknowledge first — then push back.</p>
+
+  <div class="tip-box">
+    <strong>🔑 The Golden Formula</strong>
+    Acknowledge → Soften → Disagree<br>
+    <em>"I see your point, <strong>but</strong> I think..."</em> — Notice the structure: you say something nice first, then give your view. Never start with "No, you're wrong."
+  </div>
+
+  <div class="phrase-grid fn-disagree" style="margin-bottom:28px;">
+
+    <div class="phrase-card">
+      <div class="phrase-main">I'm not sure I agree. <span class="phrase-level level-a2">A2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-disagree); background:var(--c-disagree-bg)">"Closing the lid definitely prevents germs." — "I'm not sure I agree — the study says it makes no difference."</div>
+      <div class="phrase-note">Gentle and open. Doesn't shut the other person down. Good starting point.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I see your point, but... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-disagree); background:var(--c-disagree-bg)">"We should all close the lid." — "I see your point, but the study shows it doesn't actually help."</div>
+      <div class="phrase-note">Classic, natural, very commonly used. Acknowledges before disagreeing. Never sounds rude.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I understand where you're coming from, but... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-disagree); background:var(--c-disagree-bg)">"People worry too much about germs." — "I understand where you're coming from, but some germs are genuinely dangerous."</div>
+      <div class="phrase-note">Stronger acknowledgement than "I see your point." Shows real empathy before you disagree.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I take your point, however... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-disagree); background:var(--c-disagree-bg)">"This is just one small study." — "I take your point, however, it was conducted by a top university."</div>
+      <div class="phrase-note">"However" sounds slightly more formal and confident than "but." Good in presentations.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">That's an interesting view, but I think... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-disagree); background:var(--c-disagree-bg)">"Science always gives us the full picture." — "That's an interesting view, but I think science has many limitations too."</div>
+      <div class="phrase-note">Very diplomatic. Compliments the other person's view before presenting yours.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">Actually, I think... / Actually, I'd argue that... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-disagree); background:var(--c-disagree-bg)">"Public bathrooms are generally fine." — "Actually, I'd argue that most could be much cleaner."</div>
+      <div class="phrase-note">"Actually" softens the contradiction. "I'd argue that" is more formal and confident.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">With all due respect, I don't think... <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-disagree); background:var(--c-disagree-bg)">"This research is useless." — "With all due respect, I don't think that's a fair conclusion."</div>
+      <div class="phrase-note">Formal. Signals you're about to strongly disagree while still being polite. Don't use in casual chat.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I'm afraid I disagree. <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-disagree); background:var(--c-disagree-bg)">"The study proves we don't need to clean bathrooms." — "I'm afraid I disagree — it only says the lid doesn't help."</div>
+      <div class="phrase-note">"I'm afraid" makes the disagreement sound reluctant and polite. Often used in formal English.</div>
+    </div>
+
+  </div>
+
+  <div class="tip-box">
+    <strong>⚡ Quick Practice</strong>
+    Disagree politely with these statements — use a different phrase each time:<br>
+    "Grammar is not important in English." &nbsp;·&nbsp; "Everyone should work six days a week." &nbsp;·&nbsp; "Social media is mostly harmful."
+  </div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('partial')">Partial Agreement <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ══════════ PARTIAL AGREEMENT ══════════ -->
+<div id="partial" class="section">
+  <div class="section-header"><h2 class="section-title">Partial Agreement 🤝</h2></div>
+  <p class="section-subtitle">Sometimes you don't fully agree or disagree. These phrases let you show nuance — you agree <em>with part</em> of what was said.</p>
+
+  <div class="phrase-grid fn-partial" style="margin-bottom:28px;">
+
+    <div class="phrase-card">
+      <div class="phrase-main">You have a point, but... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-partial); background:var(--c-partial-bg)">"Cleaning more often is the only solution." — "You have a point, but it's also about the products you use."</div>
+      <div class="phrase-note">Acknowledges something valid in the other person's argument before adding a "but."</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">That's true to some extent, but... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-partial); background:var(--c-partial-bg)">"The study changes everything." — "That's true to some extent, but daily habits still matter a lot."</div>
+      <div class="phrase-note">"To some extent" = partly true, but not completely. Very useful for nuanced discussions.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I agree up to a point, but... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-partial); background:var(--c-partial-bg)">"People are too obsessed with germs." — "I agree up to a point, but some caution is definitely necessary."</div>
+      <div class="phrase-note">Similar to "to some extent." "Up to a point" sounds slightly more formal and deliberate.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">There's something in that, but... <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-partial); background:var(--c-partial-bg)">"We should all become scientists." — "There's something in that — but most people are better at other things."</div>
+      <div class="phrase-note">Conversational. Means "that idea has some truth." Sounds very natural in British English.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I can see both sides of this. On one hand... on the other hand... <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-partial); background:var(--c-partial-bg)">"On one hand, the study results are clear. On the other hand, changing lifelong habits is difficult."</div>
+      <div class="phrase-note">Perfect for balanced arguments. Very common in academic writing and formal speaking. Shows maturity of thought.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">While I understand that..., I also think... <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-partial); background:var(--c-partial-bg)">"While I understand that science evolves, I also think we shouldn't abandon all hygiene habits."</div>
+      <div class="phrase-note">Sophisticated structure. Shows you can hold two ideas at the same time. Great for B2 writing.</div>
+    </div>
+
+  </div>
+
+  <div class="tip-box">
+    <strong>⚡ Quick Practice</strong>
+    Give a partial agreement to these. Don't fully agree or disagree:<br>
+    "Technology has made life better." &nbsp;·&nbsp; "Young people don't respect older people anymore." &nbsp;·&nbsp; "Money is the most important thing in life."
+  </div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('ask')">Asking for Opinions <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ══════════ ASKING FOR OPINIONS ══════════ -->
+<div id="ask" class="section">
+  <div class="section-header"><h2 class="section-title">Asking for Opinions ❓</h2></div>
+  <p class="section-subtitle">A good conversation goes both ways. Use these phrases to invite others to share their views.</p>
+
+  <div class="phrase-grid fn-ask" style="margin-bottom:28px;">
+
+    <div class="phrase-card">
+      <div class="phrase-main">What do you think (about / of) <span class="blank">+ topic</span>? <span class="phrase-level level-a2">A2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-ask); background:var(--c-ask-bg)">"What do you think about the new study on toilet hygiene?"</div>
+      <div class="phrase-note">The most common and neutral way to ask. Works in any situation.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">How do you feel about <span class="blank">+ topic</span>? <span class="phrase-level level-a2">A2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-ask); background:var(--c-ask-bg)">"How do you feel about public toilets in your city?"</div>
+      <div class="phrase-note">"Feel" suggests a more personal, emotional response. Good for personal topics.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">What's your view on <span class="blank">+ topic</span>? <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-ask); background:var(--c-ask-bg)">"What's your view on the government's hygiene policies?"</div>
+      <div class="phrase-note">More formal than "what do you think." Good for professional or academic discussions.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">What are your thoughts on <span class="blank">+ topic</span>? <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-ask); background:var(--c-ask-bg)">"What are your thoughts on the findings of this study?"</div>
+      <div class="phrase-note">Very natural in both spoken and written English. "Thoughts" (plural) invites a fuller answer.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">Do you think (that) <span class="blank">+ clause</span>? <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-ask); background:var(--c-ask-bg)">"Do you think people will change their bathroom habits after reading this?"</div>
+      <div class="phrase-note">Asks for a specific opinion on a specific claim. Easier to answer than open questions.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">Would you say that <span class="blank">+ clause</span>? <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-ask); background:var(--c-ask-bg)">"Would you say that hygiene standards are getting better or worse?"</div>
+      <div class="phrase-note">More indirect and formal. Often used in interviews or academic discussions.</div>
+    </div>
+
+    <div class="phrase-card">
+      <div class="phrase-main">I'd be interested to hear your take on <span class="blank">+ topic</span>. <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-ask); background:var(--c-ask-bg)">"I'd be interested to hear your take on whether this changes anything for you."</div>
+      <div class="phrase-note">Very polite and warm. "Take" = personal perspective. Makes the other person feel valued.</div>
+    </div>
+
+  </div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('clarify')">Clarifying <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ══════════ CLARIFYING ══════════ -->
+<div id="clarify" class="section">
+  <div class="section-header"><h2 class="section-title">Clarifying 🔄</h2></div>
+  <p class="section-subtitle">When you're not clear, or when you want to say something in a better way. Also includes asking someone else to clarify.</p>
+
+  <div class="phrase-section">
+    <div class="phrase-section-label">When YOU want to clarify what you said</div>
+    <div class="phrase-grid fn-clarify">
+      <div class="phrase-card">
+        <div class="phrase-main">What I mean is... <span class="phrase-level level-a2">A2</span></div>
+        <div class="phrase-example" style="border-color:var(--c-clarify); background:var(--c-clarify-bg)">"I don't trust the media. What I mean is, I always look for multiple sources."</div>
+        <div class="phrase-note">Simple and direct. Use when you think you've been misunderstood.</div>
+      </div>
+      <div class="phrase-card">
+        <div class="phrase-main">What I'm trying to say is... <span class="phrase-level level-b1">B1</span></div>
+        <div class="phrase-example" style="border-color:var(--c-clarify); background:var(--c-clarify-bg)">"What I'm trying to say is that the research method might have limitations."</div>
+        <div class="phrase-note">Slightly more tentative — suggests you're searching for the right words.</div>
+      </div>
+      <div class="phrase-card">
+        <div class="phrase-main">To put it another way, ... <span class="phrase-level level-b1">B1</span></div>
+        <div class="phrase-example" style="border-color:var(--c-clarify); background:var(--c-clarify-bg)">"To put it another way, closing the lid is basically useless."</div>
+        <div class="phrase-note">Rephrases your idea more simply. Often used after a complex explanation.</div>
+      </div>
+      <div class="phrase-card">
+        <div class="phrase-main">In other words, ... <span class="phrase-level level-b1">B1</span></div>
+        <div class="phrase-example" style="border-color:var(--c-clarify); background:var(--c-clarify-bg)">"In other words, what we believed about the toilet lid is actually a myth."</div>
+        <div class="phrase-note">Summarises or simplifies the previous idea. Very common in presentations.</div>
+      </div>
+      <div class="phrase-card">
+        <div class="phrase-main">Let me rephrase that. <span class="phrase-level level-b2">B2</span></div>
+        <div class="phrase-example" style="border-color:var(--c-clarify); background:var(--c-clarify-bg)">"Let me rephrase that — I'm not saying cleaning is useless, just that the lid specifically doesn't help."</div>
+        <div class="phrase-note">Use when you've said something that came out wrong or could be misinterpreted.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phrase-section" style="margin-top:20px;">
+    <div class="phrase-section-label">When you want someone ELSE to clarify</div>
+    <div class="phrase-grid fn-clarify">
+      <div class="phrase-card">
+        <div class="phrase-main">Sorry, could you say that again? <span class="phrase-level level-a2">A2</span></div>
+        <div class="phrase-example" style="border-color:var(--c-clarify); background:var(--c-clarify-bg)">"Sorry, could you say that again? I missed the last part."</div>
+        <div class="phrase-note">Simple and polite. Always better than just saying "What?"</div>
+      </div>
+      <div class="phrase-card">
+        <div class="phrase-main">What do you mean by <span class="blank">[word/phrase]</span>? <span class="phrase-level level-b1">B1</span></div>
+        <div class="phrase-example" style="border-color:var(--c-clarify); background:var(--c-clarify-bg)">"What do you mean by 'aerial transmission' exactly?"</div>
+        <div class="phrase-note">Asks for the definition of a specific term. Shows you're engaged and listening.</div>
+      </div>
+      <div class="phrase-card">
+        <div class="phrase-main">Could you elaborate on that? <span class="phrase-level level-b2">B2</span></div>
+        <div class="phrase-example" style="border-color:var(--c-clarify); background:var(--c-clarify-bg)">"Could you elaborate on why the study used a non-human virus?"</div>
+        <div class="phrase-note">Formal. Asks for more detail. Common in presentations, interviews, and academic English.</div>
+      </div>
+      <div class="phrase-card">
+        <div class="phrase-main">Are you saying that <span class="blank">+ clause</span>? <span class="phrase-level level-b2">B2</span></div>
+        <div class="phrase-example" style="border-color:var(--c-clarify); background:var(--c-clarify-bg)">"Are you saying that we should stop cleaning our bathrooms entirely?"</div>
+        <div class="phrase-note">Checks understanding by restating what you think they meant. Use with a rising intonation.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('add')">Adding Information <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ══════════ ADDING INFORMATION ══════════ -->
+<div id="add" class="section">
+  <div class="section-header"><h2 class="section-title">Adding Information ➕</h2></div>
+  <p class="section-subtitle">Use these to build on what you've already said — or to support your argument with more evidence.</p>
+
+  <div class="phrase-grid fn-add" style="margin-bottom:28px;">
+    <div class="phrase-card">
+      <div class="phrase-main">Also, ... / And also, ... <span class="phrase-level level-a2">A2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-add); background:var(--c-add-bg)">"The study found no difference. Also, it recommended disinfecting all surfaces."</div>
+      <div class="phrase-note">The simplest way to add a point. Don't start every sentence with "Also" — vary it.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">Not only that, but... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-add); background:var(--c-add-bg)">"The lid doesn't help. Not only that, but it might actually make things worse."</div>
+      <div class="phrase-note">Emphasises that the next point is surprising or stronger than the first. Great for dramatic effect.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">What's more, ... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-add); background:var(--c-add-bg)">"The researchers tested two bathrooms. What's more, they ran the experiment multiple times."</div>
+      <div class="phrase-note">Adds extra information that supports or strengthens the point. Slightly formal, very natural.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">On top of that, ... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-add); background:var(--c-add-bg)">"Public bathrooms are often underfunded. On top of that, they're cleaned less than once a day."</div>
+      <div class="phrase-note">Adds to a negative situation or problem. Common in spoken English and debates.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">In addition (to this / to that), ... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-add); background:var(--c-add-bg)">"In addition to this, the researchers suggested disinfecting the toilet brush as well."</div>
+      <div class="phrase-note">More formal. Very common in written English, reports, and presentations.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">Furthermore, ... / Moreover, ... <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-add); background:var(--c-add-bg)">"The study was thorough. Furthermore, it was conducted by a leading university."</div>
+      <div class="phrase-note">Academic / formal. "Moreover" is slightly stronger than "furthermore." Use in essays and presentations.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">To make matters worse, ... <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-add); background:var(--c-add-bg)">"The bathroom was already dirty. To make matters worse, the disinfectant had run out."</div>
+      <div class="phrase-note">Adds a point that makes a bad situation even worse. Dramatic and conversational.</div>
+    </div>
+  </div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('change')">Changing Topic <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ══════════ CHANGING TOPIC ══════════ -->
+<div id="change" class="section">
+  <div class="section-header"><h2 class="section-title">Changing Topic 🔀</h2></div>
+  <p class="section-subtitle">Move a conversation forward naturally — back on track, or to something related.</p>
+
+  <div class="phrase-grid fn-change" style="margin-bottom:28px;">
+    <div class="phrase-card">
+      <div class="phrase-main">Anyway, ... <span class="phrase-level level-a2">A2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-change); background:var(--c-change-bg)">"We've talked a lot about the study. Anyway, let me ask you something different."</div>
+      <div class="phrase-note">The most casual and common. Signals you're moving on. Can also bring a conversation back on track.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">Moving on, ... / Let's move on to... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-change); background:var(--c-change-bg)">"Moving on, I'd like to ask about your personal experience with hygiene."</div>
+      <div class="phrase-note">Signals a deliberate shift. Common in presentations, classes, and interviews.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">That reminds me, ... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-change); background:var(--c-change-bg)">"That reminds me, I read another article about bacteria in kitchens last week."</div>
+      <div class="phrase-note">Natural, conversational transition. Connects the new topic to something already said.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">Speaking of which, ... <span class="phrase-level level-b1">B1</span></div>
+      <div class="phrase-example" style="border-color:var(--c-change); background:var(--c-change-bg)">"We've been talking about bathrooms. Speaking of which, have you seen the new smart toilet designs?"</div>
+      <div class="phrase-note">Links the new topic to something just mentioned. Sounds fluid and natural.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">On a different note, ... / On another note, ... <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-change); background:var(--c-change-bg)">"On a different note, do you think this study will change government health policies?"</div>
+      <div class="phrase-note">More formal way to change topic. Signals the shift clearly without being abrupt.</div>
+    </div>
+    <div class="phrase-card">
+      <div class="phrase-main">Getting back to what I was saying earlier, ... <span class="phrase-level level-b2">B2</span></div>
+      <div class="phrase-example" style="border-color:var(--c-change); background:var(--c-change-bg)">"Getting back to what I was saying earlier, the real problem is disinfection frequency."</div>
+      <div class="phrase-note">Returns to a previous point. Shows you're tracking the whole conversation.</div>
+    </div>
+  </div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('practice')">Practice <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ══════════ PRACTICE ══════════ -->
+<div id="practice" class="section">
+  <div class="section-header"><h2 class="section-title">Practice ✏️</h2></div>
+  <p class="section-subtitle">Choose the best phrase to complete each conversation. Think about the context and the function being used.</p>
+
+  <div class="score-bar">
+    <span class="score-label">Score</span>
+    <span class="score-display" id="score-display">— / 8</span>
+  </div>
+
+  <div class="q-card">
+    <div class="q-text"><span class="q-number">1</span>Ana says: "I think exercise is more important than diet for good health." You partly agree. What do you say?</div>
+    <div class="options">
+      <button class="option" data-key="a" onclick="selectOption(this)"><strong>a</strong> "I couldn't agree more."</button>
+      <button class="option" data-key="b" data-correct="true" onclick="selectOption(this)"><strong>b</strong> "That's true to some extent, but diet plays a huge role too."</button>
+      <button class="option" data-key="c" onclick="selectOption(this)"><strong>c</strong> "I'm afraid I disagree entirely."</button>
+      <button class="option" data-key="d" onclick="selectOption(this)"><strong>d</strong> "Could you elaborate on that?"</button>
+    </div>
+    <button class="reveal-btn" onclick="toggleAnswer(this)"><span class="icon">▼</span><span class="btn-label"> Reveal Answer</span></button>
+    <div class="answer-panel"><div class="answer-inner">
+      <div class="answer-label">✓ Correct Answer</div>
+      <div class="answer-main">b — "That's true to some extent, but diet plays a huge role too."</div>
+      <div class="answer-why"><strong>Partial agreement.</strong> You agree with part of the statement (exercise matters) but want to add the other side (diet also matters). "That's true to some extent, but..." is the classic partial agreement structure.</div>
+    </div></div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-text"><span class="q-number">2</span>You've just made a complex point and your classmate looks confused. What do you say?</div>
+    <div class="options">
+      <button class="option" data-key="a" onclick="selectOption(this)"><strong>a</strong> "Moving on, let's talk about something else."</button>
+      <button class="option" data-key="b" onclick="selectOption(this)"><strong>b</strong> "I couldn't agree more with myself."</button>
+      <button class="option" data-key="c" data-correct="true" onclick="selectOption(this)"><strong>c</strong> "In other words, the toilet lid doesn't actually help prevent germs."</button>
+      <button class="option" data-key="d" onclick="selectOption(this)"><strong>d</strong> "If you ask me, that's the right answer."</button>
+    </div>
+    <button class="reveal-btn" onclick="toggleAnswer(this)"><span class="icon">▼</span><span class="btn-label"> Reveal Answer</span></button>
+    <div class="answer-panel"><div class="answer-inner">
+      <div class="answer-label">✓ Correct Answer</div>
+      <div class="answer-main">c — "In other words, the toilet lid doesn't actually help prevent germs."</div>
+      <div class="answer-why"><strong>Clarifying.</strong> "In other words" rephrases a complex idea more simply. When someone looks confused, your job is to restate — not move on or add more complexity.</div>
+    </div></div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-text"><span class="q-number">3</span>James says: "Social media is ruining society." You strongly disagree. What is the most polite way to respond?</div>
+    <div class="options">
+      <button class="option" data-key="a" onclick="selectOption(this)"><strong>a</strong> "No, you're completely wrong."</button>
+      <button class="option" data-key="b" onclick="selectOption(this)"><strong>b</strong> "Exactly! I agree completely."</button>
+      <button class="option" data-key="c" data-correct="true" onclick="selectOption(this)"><strong>c</strong> "I understand where you're coming from, but I think social media also connects people in powerful ways."</button>
+      <button class="option" data-key="d" onclick="selectOption(this)"><strong>d</strong> "That reminds me, I use Instagram a lot."</button>
+    </div>
+    <button class="reveal-btn" onclick="toggleAnswer(this)"><span class="icon">▼</span><span class="btn-label"> Reveal Answer</span></button>
+    <div class="answer-panel"><div class="answer-inner">
+      <div class="answer-label">✓ Correct Answer</div>
+      <div class="answer-main">c — "I understand where you're coming from, but I think social media also connects people."</div>
+      <div class="answer-why"><strong>Polite disagreement.</strong> Acknowledge first ("I understand where you're coming from"), then present your view. Option (a) is rude. Option (d) changes the subject — not a disagreement.</div>
+    </div></div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-text"><span class="q-number">4</span>You want to know what your teacher thinks about a controversial topic. Which question is most appropriate?</div>
+    <div class="options">
+      <button class="option" data-key="a" onclick="selectOption(this)"><strong>a</strong> "Tell me your opinion right now."</button>
+      <button class="option" data-key="b" data-correct="true" onclick="selectOption(this)"><strong>b</strong> "I'd be interested to hear your take on this."</button>
+      <button class="option" data-key="c" onclick="selectOption(this)"><strong>c</strong> "As far as I'm concerned, what do you think?"</button>
+      <button class="option" data-key="d" onclick="selectOption(this)"><strong>d</strong> "Could you say that again?"</button>
+    </div>
+    <button class="reveal-btn" onclick="toggleAnswer(this)"><span class="icon">▼</span><span class="btn-label"> Reveal Answer</span></button>
+    <div class="answer-panel"><div class="answer-inner">
+      <div class="answer-label">✓ Correct Answer</div>
+      <div class="answer-main">b — "I'd be interested to hear your take on this."</div>
+      <div class="answer-why"><strong>Asking for opinions (politely).</strong> This is warm and respectful — it signals genuine curiosity without pressure. Option (a) is too direct. Option (c) mixes up two different functions incorrectly. Option (d) is for clarification, not asking opinions.</div>
+    </div></div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-text"><span class="q-number">5</span>You've been talking about the toilet study for a while. You want to change the subject to bathroom design. What do you say?</div>
+    <div class="options">
+      <button class="option" data-key="a" onclick="selectOption(this)"><strong>a</strong> "I see your point, but..."</button>
+      <button class="option" data-key="b" onclick="selectOption(this)"><strong>b</strong> "What I mean is..."</button>
+      <button class="option" data-key="c" data-correct="true" onclick="selectOption(this)"><strong>c</strong> "Speaking of which, have you seen the new Japanese toilet designs?"</button>
+      <button class="option" data-key="d" onclick="selectOption(this)"><strong>d</strong> "I'm afraid I disagree."</button>
+    </div>
+    <button class="reveal-btn" onclick="toggleAnswer(this)"><span class="icon">▼</span><span class="btn-label"> Reveal Answer</span></button>
+    <div class="answer-panel"><div class="answer-inner">
+      <div class="answer-label">✓ Correct Answer</div>
+      <div class="answer-main">c — "Speaking of which, have you seen the new Japanese toilet designs?"</div>
+      <div class="answer-why"><strong>Changing topic.</strong> "Speaking of which" links the new topic (bathroom design) to the current one (bathrooms) naturally. The other options are for disagreeing and clarifying — completely wrong functions here.</div>
+    </div></div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-text"><span class="q-number">6</span>You've made a strong point. You want to add one more argument that makes it even stronger. What do you say?</div>
+    <div class="options">
+      <button class="option" data-key="a" onclick="selectOption(this)"><strong>a</strong> "That's a fair point."</button>
+      <button class="option" data-key="b" data-correct="true" onclick="selectOption(this)"><strong>b</strong> "Not only that, but the study also found bacteria on the toilet brush."</button>
+      <button class="option" data-key="c" onclick="selectOption(this)"><strong>c</strong> "Let me rephrase that."</button>
+      <button class="option" data-key="d" onclick="selectOption(this)"><strong>d</strong> "I agree up to a point."</button>
+    </div>
+    <button class="reveal-btn" onclick="toggleAnswer(this)"><span class="icon">▼</span><span class="btn-label"> Reveal Answer</span></button>
+    <div class="answer-panel"><div class="answer-inner">
+      <div class="answer-label">✓ Correct Answer</div>
+      <div class="answer-main">b — "Not only that, but the study also found bacteria on the toilet brush."</div>
+      <div class="answer-why"><strong>Adding information.</strong> "Not only that, but..." signals a second, often stronger point. It's perfect for building an argument. Option (a) is agreement. Option (c) is clarifying. Option (d) is partial agreement.</div>
+    </div></div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-text"><span class="q-number">7</span>Which phrase is NOT appropriate for giving an opinion?</div>
+    <div class="options">
+      <button class="option" data-key="a" onclick="selectOption(this)"><strong>a</strong> "In my view, the study is very important."</button>
+      <button class="option" data-key="b" data-correct="true" onclick="selectOption(this)"><strong>b</strong> "Could you elaborate on that?"</button>
+      <button class="option" data-key="c" onclick="selectOption(this)"><strong>c</strong> "Personally, I think this changes nothing."</button>
+      <button class="option" data-key="d" onclick="selectOption(this)"><strong>d</strong> "If you ask me, the research is solid."</button>
+    </div>
+    <button class="reveal-btn" onclick="toggleAnswer(this)"><span class="icon">▼</span><span class="btn-label"> Reveal Answer</span></button>
+    <div class="answer-panel"><div class="answer-inner">
+      <div class="answer-label">✓ Correct Answer</div>
+      <div class="answer-main">b — "Could you elaborate on that?"</div>
+      <div class="answer-why">This is a <strong>clarifying</strong> phrase — asking someone else to explain more. It's not for giving opinions. All the others (in my view / personally / if you ask me) are opinion phrases.</div>
+    </div></div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-text"><span class="q-number">8</span>Lena says something you don't fully understand. You want her to say it differently. What do you say?</div>
+    <div class="options">
+      <button class="option" data-key="a" onclick="selectOption(this)"><strong>a</strong> "I couldn't agree more."</button>
+      <button class="option" data-key="b" data-correct="true" onclick="selectOption(this)"><strong>b</strong> "What do you mean by that exactly?"</button>
+      <button class="option" data-key="c" onclick="selectOption(this)"><strong>c</strong> "On a different note..."</button>
+      <button class="option" data-key="d" onclick="selectOption(this)"><strong>d</strong> "Furthermore, I think you're right."</button>
+    </div>
+    <button class="reveal-btn" onclick="toggleAnswer(this)"><span class="icon">▼</span><span class="btn-label"> Reveal Answer</span></button>
+    <div class="answer-panel"><div class="answer-inner">
+      <div class="answer-label">✓ Correct Answer</div>
+      <div class="answer-main">b — "What do you mean by that exactly?"</div>
+      <div class="answer-why"><strong>Asking for clarification.</strong> This asks Lena to explain her specific point more clearly. Option (a) agrees without understanding — a common but bad habit. Options (c) and (d) add or change topic — wrong functions.</div>
+    </div></div>
+  </div>
+
+  <div id="score-summary" class="score-summary"></div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('dialogue')">Dialogue <span class="arrow">→</span></button>
+  </div>
+</div>
+<div id="dialogue" class="section">
+  <div class="section-header"><h2 class="section-title">Dialogue in Action 💬</h2></div>
+  <p class="section-subtitle">Read this conversation. Each line uses one of the communication functions from this lesson. Can you identify which function is being used?</p>
+
+  <div class="tip-box">
+    <strong>🎯 Your Task</strong>
+    Read the dialogue. For each highlighted phrase, name the function: <em>opinion / agree / disagree / partial / ask / clarify / add / change.</em> Click the button at the end to check.
+  </div>
+
+  <div class="dialogue-card">
+    <div class="dialogue-line">
+      <span class="d-speaker">Sam:</span>
+      <span class="d-text">So I read this study that says closing the toilet lid doesn't actually stop germs from spreading. <em style="color:var(--purple-mid);">"What are your thoughts on that?"</em> <span class="fn-tag" style="background:var(--c-ask-bg); color:var(--c-ask);">?</span></span>
+    </div>
+    <div class="dialogue-line">
+      <span class="d-speaker">Jo:</span>
+      <span class="d-text"><em style="color:var(--purple-mid);">"In my opinion,"</em> <span class="fn-tag" style="background:var(--c-opinion-bg); color:var(--c-opinion);">?</span> it's a bit shocking. I always thought it made a difference.</span>
+    </div>
+    <div class="dialogue-line">
+      <span class="d-speaker">Sam:</span>
+      <span class="d-text"><em style="color:var(--purple-mid);">"That's a good point."</em> <span class="fn-tag" style="background:var(--c-agree-bg); color:var(--c-agree);">?</span> Most people assume the lid helps. <em style="color:var(--purple-mid);">"Not only that, but</em> <span class="fn-tag" style="background:var(--c-add-bg); color:var(--c-add);">?</span> the study also found that the toilet brush is a major source of contamination."</span>
+    </div>
+    <div class="dialogue-line">
+      <span class="d-speaker">Jo:</span>
+      <span class="d-text"><em style="color:var(--purple-mid);">"I see your point, but"</em> <span class="fn-tag" style="background:var(--c-disagree-bg); color:var(--c-disagree);">?</span> surely closing the lid is still better than nothing, psychologically?</span>
+    </div>
+    <div class="dialogue-line">
+      <span class="d-speaker">Sam:</span>
+      <span class="d-text"><em style="color:var(--purple-mid);">"That's true to some extent."</em> <span class="fn-tag" style="background:var(--c-partial-bg); color:var(--c-partial);">?</span> Habits still matter. <em style="color:var(--purple-mid);">"What I mean is"</em> <span class="fn-tag" style="background:var(--c-clarify-bg); color:var(--c-clarify);">?</span> the real issue is disinfecting regularly, not just the lid.</span>
+    </div>
+    <div class="dialogue-line">
+      <span class="d-speaker">Jo:</span>
+      <span class="d-text">OK, I think I understand now. <em style="color:var(--purple-mid);">"Speaking of which,"</em> <span class="fn-tag" style="background:var(--c-change-bg); color:var(--c-change);">?</span> when did you last disinfect your bathroom?</span>
+    </div>
+    <div class="dialogue-line">
+      <span class="d-speaker">Sam:</span>
+      <span class="d-text">...Let's not talk about that.</span>
+    </div>
+  </div>
+
+  <button class="reveal-btn" onclick="toggleAnswer(this)"><span class="icon">▼</span><span class="btn-label"> Reveal All Functions</span></button>
+  <div class="answer-panel"><div class="answer-inner">
+    <div class="answer-label">Dialogue Functions</div>
+    <div class="answer-why">
+      1. <strong>"What are your thoughts on that?"</strong> → ❓ Asking for opinions<br>
+      2. <strong>"In my opinion,"</strong> → 💭 Giving opinions<br>
+      3. <strong>"That's a good point."</strong> → ✅ Agreeing<br>
+      4. <strong>"Not only that, but..."</strong> → ➕ Adding information<br>
+      5. <strong>"I see your point, but..."</strong> → ❌ Disagreeing politely<br>
+      6. <strong>"That's true to some extent."</strong> → 🤝 Partial agreement<br>
+      7. <strong>"What I mean is..."</strong> → 🔄 Clarifying<br>
+      8. <strong>"Speaking of which,"</strong> → 🔀 Changing topic
+    </div>
+  </div></div>
+
+  <div class="next-btn-wrap">
+    <button class="next-btn" onclick="showSection('roleplay')">Role Play <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ══════════ ROLE PLAY ══════════ -->
+<div id="roleplay" class="section">
+  <div class="section-header"><h2 class="section-title">Role Play 🎭</h2></div>
+  <p class="section-subtitle">Pick a topic and have a real conversation using today's phrases. The target functions are shown on each card — try to use them all.</p>
+
+  <div class="tip-box">
+    <strong>🎯 How to Use This</strong>
+    Choose a topic. The teacher takes one position, the student takes the other — or just discuss freely. Use the coloured target badges as a checklist. You get a point each time you use one naturally!
+  </div>
+
+  <div class="roleplay-card">
+    <div class="s-label" style="color:var(--purple-light); margin-bottom:8px;">Topic 1 🚽</div>
+    <div class="rp-topic">"After reading the study, a friend wants to completely stop cleaning their bathroom. How do you respond?"</div>
+    <div class="rp-targets">
+      <span class="rp-target" style="background:var(--c-disagree-bg); border-color:var(--c-disagree); color:var(--c-disagree)">❌ Disagree politely</span>
+      <span class="rp-target" style="background:var(--c-partial-bg); border-color:var(--c-partial); color:var(--c-partial)">🤝 Partial agreement</span>
+      <span class="rp-target" style="background:var(--c-add-bg); border-color:var(--c-add); color:var(--c-add)">➕ Add information</span>
+      <span class="rp-target" style="background:var(--c-clarify-bg); border-color:var(--c-clarify); color:var(--c-clarify)">🔄 Clarify</span>
+    </div>
+  </div>
+
+  <div class="roleplay-card">
+    <div class="s-label" style="color:var(--purple-light); margin-bottom:8px;">Topic 2 📱</div>
+    <div class="rp-topic">"Discuss: Should social media platforms be regulated by the government?"</div>
+    <div class="rp-targets">
+      <span class="rp-target" style="background:var(--c-opinion-bg); border-color:var(--c-opinion); color:var(--c-opinion)">💭 Give opinions</span>
+      <span class="rp-target" style="background:var(--c-agree-bg); border-color:var(--c-agree); color:var(--c-agree)">✅ Agree</span>
+      <span class="rp-target" style="background:var(--c-disagree-bg); border-color:var(--c-disagree); color:var(--c-disagree)">❌ Disagree</span>
+      <span class="rp-target" style="background:var(--c-ask-bg); border-color:var(--c-ask); color:var(--c-ask)">❓ Ask opinions</span>
+    </div>
+  </div>
+
+  <div class="roleplay-card">
+    <div class="s-label" style="color:var(--purple-light); margin-bottom:8px;">Topic 3 🏙️</div>
+    <div class="rp-topic">"Your city has a very limited budget. It can either improve public toilets OR fix the roads. Which do you choose and why?"</div>
+    <div class="rp-targets">
+      <span class="rp-target" style="background:var(--c-opinion-bg); border-color:var(--c-opinion); color:var(--c-opinion)">💭 Give opinions</span>
+      <span class="rp-target" style="background:var(--c-partial-bg); border-color:var(--c-partial); color:var(--c-partial)">🤝 Partial agreement</span>
+      <span class="rp-target" style="background:var(--c-add-bg); border-color:var(--c-add); color:var(--c-add)">➕ Add information</span>
+      <span class="rp-target" style="background:var(--c-change-bg); border-color:var(--c-change); color:var(--c-change)">🔀 Change topic</span>
+    </div>
+  </div>
+
+  <div class="roleplay-card">
+    <div class="s-label" style="color:var(--purple-light); margin-bottom:8px;">Topic 4 💼</div>
+    <div class="rp-topic">"Discuss: Is working from home better or worse than working in an office?"</div>
+    <div class="rp-targets">
+      <span class="rp-target" style="background:var(--c-opinion-bg); border-color:var(--c-opinion); color:var(--c-opinion)">💭 Give opinions</span>
+      <span class="rp-target" style="background:var(--c-agree-bg); border-color:var(--c-agree); color:var(--c-agree)">✅ Agree</span>
+      <span class="rp-target" style="background:var(--c-disagree-bg); border-color:var(--c-disagree); color:var(--c-disagree)">❌ Disagree</span>
+      <span class="rp-target" style="background:var(--c-clarify-bg); border-color:var(--c-clarify); color:var(--c-clarify)">🔄 Clarify</span>
+      <span class="rp-target" style="background:var(--c-ask-bg); border-color:var(--c-ask); color:var(--c-ask)">❓ Ask opinions</span>
+    </div>
+  </div>
+
+  <div class="roleplay-card">
+    <div class="s-label" style="color:var(--purple-light); margin-bottom:8px;">Topic 5 🌍</div>
+    <div class="rp-topic">"Free conversation: Talk about any topic for 5 minutes. Your only rule: you must use at least one phrase from each function (8 total). Keep a mental score."</div>
+    <div class="rp-targets">
+      <span class="rp-target" style="background:var(--c-opinion-bg); border-color:var(--c-opinion); color:var(--c-opinion)">💭</span>
+      <span class="rp-target" style="background:var(--c-agree-bg); border-color:var(--c-agree); color:var(--c-agree)">✅</span>
+      <span class="rp-target" style="background:var(--c-disagree-bg); border-color:var(--c-disagree); color:var(--c-disagree)">❌</span>
+      <span class="rp-target" style="background:var(--c-partial-bg); border-color:var(--c-partial); color:var(--c-partial)">🤝</span>
+      <span class="rp-target" style="background:var(--c-ask-bg); border-color:var(--c-ask); color:var(--c-ask)">❓</span>
+      <span class="rp-target" style="background:var(--c-clarify-bg); border-color:var(--c-clarify); color:var(--c-clarify)">🔄</span>
+      <span class="rp-target" style="background:var(--c-add-bg); border-color:var(--c-add); color:var(--c-add)">➕</span>
+      <span class="rp-target" style="background:var(--c-change-bg); border-color:var(--c-change); color:var(--c-change)">🔀</span>
+    </div>
+  </div>
+
+</div>
+
+</main>
+
+<script>
+  const SECTIONS = ['overview','opinion','agree','disagree','partial','ask','clarify','add','change','practice','dialogue','roleplay'];
+  const TOTAL_Q = 8;
+  let score = 0, answered = 0;
+
+  const showSection = (id) => {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('nav button')[SECTIONS.indexOf(id)].classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const toggleAnswer = (btn) => {
+    const panel = btn.nextElementSibling;
+    const isOpen = panel.classList.contains('open');
+    const labelEl = btn.querySelector('.btn-label');
+    panel.classList.toggle('open', !isOpen);
+    btn.classList.toggle('open', !isOpen);
+    btn.querySelector('.icon').textContent = isOpen ? '▼' : '▲';
+    if (labelEl) labelEl.textContent = isOpen ? ' Reveal Answer' : ' Hide Answer';
+  };
+
+  const openAnswerPanel = (card) => {
+    const btn = card.querySelector('.reveal-btn');
+    const panel = btn.nextElementSibling;
+    panel.classList.add('open');
+    btn.classList.add('open');
+    btn.querySelector('.icon').textContent = '▲';
+    const labelEl = btn.querySelector('.btn-label');
+    if (labelEl) labelEl.textContent = ' Hide Answer';
+  };
+
+  const updateScoreDisplay = () => {
+    const el = document.getElementById('score-display');
+    if (el) el.textContent = `${score} / ${answered}`;
+  };
+
+  const showSummary = () => {
+    const el = document.getElementById('score-summary');
+    if (!el) return;
+    const pct = Math.round((score / TOTAL_Q) * 100);
+    const msg = pct >= 80
+      ? '🌟 Excellent! You really know these phrases.'
+      : pct >= 60
+      ? '👍 Good work! Review the ones you missed.'
+      : '📚 Keep practising — go back through the phrase tabs.';
+    el.innerHTML = `<div class="score-big">${score} / ${TOTAL_Q}</div>
+      <div class="score-pct">${pct}%</div>
+      <div class="score-msg">${msg}</div>`;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const selectOption = (btn) => {
+    const card = btn.closest('.q-card');
+    if (card.dataset.answered) return;
+    card.dataset.answered = 'true';
+
+    const isCorrect = btn.dataset.correct === 'true';
+    card.querySelectorAll('.option').forEach(opt => {
+      opt.disabled = true;
+      if (opt.dataset.correct === 'true') opt.classList.add('correct');
+    });
+    if (!isCorrect) btn.classList.add('wrong');
+
+    if (isCorrect) score++;
+    answered++;
+    updateScoreDisplay();
+    openAnswerPanel(card);
+
+    if (answered === TOTAL_Q) showSummary();
+  };
+</script>
+
+</body>
+</html>
